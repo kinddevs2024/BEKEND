@@ -1,6 +1,8 @@
 const http = require("node:http");
 const parser = require("./utils/parser");
 const { fileRead, fileWrite } = require("./utils/RW");
+const { url } = require("node:inspector");
+const { log } = require("node:console");
 const server = http.createServer(async (req, res) => {
     if (req.url === "/projec" && req.method === "POST") {
         const { name, description, price } = await parser(req);
@@ -50,6 +52,25 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify(filteredItems));
         });
+    }
+    if (req.url === "/elements" && req.method === "GET") {
+        // const cars = await fileRead("./database/users.json");
+        const { page, take } = await parser(req);
+        // const elements = await getElements('./database/users.json', page, taka);
+
+
+        // console.log(taka);
+        // const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        const cars = await fileRead("./database/users.json");
+
+
+        const startIndex = (page - 1) * take;
+
+        const paginatedItems = cars.splice(startIndex, take);
+        // console.log(paginatedItems);  // Output: [4, 5, 6] for page 2, assuming `take` is 3
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(paginatedItems));
+
     }
 });
 server.listen(7777, () => { console.log("Server started"); });  
