@@ -1,8 +1,6 @@
 const http = require("node:http");
 const parser = require("./utils/parser");
 const { fileRead, fileWrite } = require("./utils/RW");
-const { url } = require("node:inspector");
-const { log } = require("node:console");
 const server = http.createServer(async (req, res) => {
     if (req.url === "/projec" && req.method === "POST") {
         const { name, description, price } = await parser(req);
@@ -73,4 +71,4 @@ const server = http.createServer(async (req, res) => {
 
     }
 });
-server.listen(7777, () => { console.log("Server started"); });  
+server.listen(8888, () => { console.log("Server started"); });  
