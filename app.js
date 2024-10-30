@@ -1,11 +1,12 @@
 const http = require("node:http");
 const parser = require("./utils/parser");
 const { fileRead, fileWrite } = require("./utils/RW");
+
 const server = http.createServer(async (req, res) => {
-    if (req.url === "/projec" && req.method === "POST") {
-        const { name, description, price } = await parser(req);
+    if (req.url === "/addobj" && req.method === "POST") {
+        const { name, description, price, username, password } = await parser(req);
         const cars = await fileRead("./database/users.json");
-        const car = { id: cars.length + 1, name, description, price };
+        const car = { id: cars.length + 1, name, description, price, username, password };
         cars.push(car);
         fileWrite("./database/users.json", cars);
         res.writeHead(201, { "Content-Type": "application/json" });
@@ -52,23 +53,27 @@ const server = http.createServer(async (req, res) => {
         });
     }
     if (req.url === "/elements" && req.method === "GET") {
-        // const cars = await fileRead("./database/users.json");
         const { page, take } = await parser(req);
-        // const elements = await getElements('./database/users.json', page, taka);
-
-
-        // console.log(taka);
-        // const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         const cars = await fileRead("./database/users.json");
-
-
         const startIndex = (page - 1) * take;
-
         const paginatedItems = cars.splice(startIndex, take);
-        // console.log(paginatedItems);  // Output: [4, 5, 6] for page 2, assuming `take` is 3
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(paginatedItems));
+    }
+    if (req.url === "/login" && req.method === "GET") {
+        // const { username, password } = req.body;
+        const { username, password } = await parser(req);
+        const cars = await fileRead("./database/users.json");
+        const findUser = cars.find((el) => el.username === username && el.password === password);
 
+        if (!findUser == "") {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "User correct" }));
+        } else {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "Username or pasword isent correct" }));
+        }
     }
 });
-server.listen(8888, () => { console.log("Server started"); });  
+
+server.listen(7777, () => { console.log("Server started"); });
