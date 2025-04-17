@@ -1,22 +1,22 @@
 [
   {
-    "id": 1,
-    "username": 2,
-    "pasword": 5
+    "status": "Admin",
+    "name": "Admin",
+    "surname": "Admin",
+    "phone": "+1234567890",
+    "address": "123 Admin St, Admin City, Admin Country",
+    "username": "admin",
+    "email": "kinddevs@gmail.com",
+    "password": "admin123"
   },
-  {
-    "id": 2,
-    "username": 2,
-    "pasword": 5
-  },
-  {
-    "id": 3,
-    "username": 2,
-    "password": 5
-  },
-  {
-    "id": 4,
-    "username": "few",
-    "password": "jnejsn"
+    {
+    "status": "Meneger",
+    "name": "Meneger",
+    "surname": "Meneger",
+    "phone": "+1234567890",
+    "address": "123 Meneger St, Meneger City, Meneger Country",
+    "username": "meneger",
+    "email": "Meneger@gmail.com",
+    "password": "meneger123"
   }
 ]
