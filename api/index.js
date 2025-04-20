@@ -2,64 +2,62 @@ const express = require("express");
 const serverless = require("serverless-http");
 const cors = require("cors");
 const fs = require("fs").promises;
+const path = require("path");
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+const usersPath = path.join(__dirname, "../database/users.json");
 
-
-async function parser(req) {
-    return new Promise((resolve, reject) => {
-        let body = "";
-        req.on("data", (chunk) => {
-            body += chunk.toString();
-        });
-        req.on("end", () => {
-            try {
-                resolve(JSON.parse(body));
-            } catch (error) {
-                reject(error);
-            }
-        });
-    });
+// Utility function to validate request body
+function validateRequestBody(body) {
+  const { email, password } = body;
+  if (!email || !password) {
+    return "Email and password are required";
+  }
+  return null;
 }
 
 async function fileRead(path) {
-    try {
-        const data = await fs.readFile(path, "utf-8");
-        return JSON.parse(data);
-    } catch (error) {
-        throw new Error("Error reading file");
-    }
+  try {
+    const data = await fs.readFile(path, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    throw new Error(`Error reading file at ${path}: ${error.message}`);
+  }
 }
 
 app.post("/api/users", async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            res.status(400).json({ message: "Email and password are required" });
-            return;
-        }
-
-        const users = await fileRead("./database/users.json");
-
-        const user = users.find(
-            (user) => user.email === email && user.password === password
-        );
-
-        if (!user) {
-            res.status(401).json({ message: "Invalid email or password" });
-            return;
-        }
-
-        res.status(200).json({ user });
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    const validationError = validateRequestBody(req.body);
+    if (validationError) {
+      res.status(400).json({ message: validationError });
+      return;
     }
+
+    const { email, password } = req.body;
+    const users = await fileRead(usersPath);
+
+    const user = users.find(
+      (user) => user.email === email && user.password === password
+    );
+
+    if (!user) {
+      res.status(401).json({ message: "Invalid email or password" });
+      return;
+    }
+
+    // Avoid exposing sensitive user data
+    const { password: _, ...safeUser } = user;
+
+    res.status(200).json({ user: safeUser });
+  } catch (error) {
+    console.error("Full Error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
-// Оборачиваем в serverless
+// Export for serverless
 module.exports.handler = serverless(app);
