@@ -1,0 +1,27 @@
+service: arch-lab-backend
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    NODE_ENV: production
+
+functions:
+  app:
+    handler: api/index.handler
+    events:
+      - http:
+          path: api/{proxy+}
+          method: any
+          cors: true
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true

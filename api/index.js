@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-const usersPath = path.join(__dirname, "../database/users.json");
+const usersPath = path.join(__dirname, "../database/users.json"); // Ensure path is correct
 
 // Utility function to validate request body
 function validateRequestBody(body) {
@@ -30,6 +30,7 @@ function validateRequestBody(body) {
   return null;
 }
 
+// Function to read the JSON file
 async function fileRead(path) {
   try {
     const data = await fs.readFile(path, "utf-8");
@@ -39,6 +40,7 @@ async function fileRead(path) {
   }
 }
 
+// POST /api/users - User authentication endpoint
 app.post("/api/users", async (req, res) => {
   try {
     const validationError = validateRequestBody(req.body);
@@ -48,7 +50,7 @@ app.post("/api/users", async (req, res) => {
     }
 
     const { email, password } = req.body;
-    const users = await fileRead(usersPath);
+    const users = await fileRead(usersPath); // Reads the users from JSON
 
     const user = users.find(
       (user) => user.email === email && user.password === password
@@ -59,15 +61,15 @@ app.post("/api/users", async (req, res) => {
       return;
     }
 
-    // Avoid exposing sensitive user data
+    // Avoid exposing sensitive user data (don't send password)
     const { password: _, ...safeUser } = user;
 
     res.status(200).json({ user: safeUser });
   } catch (error) {
-    console.error("Full Error:", error);
+    console.error("Full Error:", error); // Debugging log
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// Export for serverless
+// Export the app as a serverless function
 module.exports.handler = serverless(app);
