@@ -6,7 +6,16 @@ const path = require("path");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://archlab.vercel.app",
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+  })
+);
+
+app.options("*", cors()); // Handle preflight
+
 app.use(express.json());
 
 const usersPath = path.join(__dirname, "../database/users.json");
