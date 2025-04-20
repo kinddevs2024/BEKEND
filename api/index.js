@@ -6,13 +6,17 @@ const path = require("path");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "https://archlab.vercel.app",
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-  })
-);
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "https://archlab.vercel.app");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 
 app.options("*", cors()); // Handle preflight
 
