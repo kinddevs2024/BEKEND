@@ -5,7 +5,7 @@ const path = require("path");
 
 const app = express();
 
-// ✅ Manual CORS headers
+// ✅ Manual CORS headers for Vercel
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "https://archlab.vercel.app");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -69,4 +69,5 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
+// Export for serverless
 module.exports.handler = serverless(app);
