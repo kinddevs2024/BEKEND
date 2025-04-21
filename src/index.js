@@ -1,7 +1,7 @@
-const express = require("express");
-const serverless = require("serverless-http");
-const fs = require("fs").promises;
-const path = require("path");
+import express from "express";
+import serverless from "serverless-http";
+import { promises as fs } from "fs";
+import path from "path";
 
 const app = express();
 
@@ -72,4 +72,4 @@ app.post("/api/users", async (req, res) => {
 });
 
 // Export the app as a serverless function
-module.exports.handler = serverless(app);
+export const handler = serverless(app);
