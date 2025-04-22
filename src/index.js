@@ -40,7 +40,7 @@ async function fileRead(path) {
 }
 
 // POST /api/users - User authentication endpoint
-app.post("/api/users", async (req, res) => {
+app.post("/users", async (req, res) => {
   try {
     const validationError = validateRequestBody(req.body);
     if (validationError) {
@@ -70,16 +70,7 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
-app.get("/api/users", async (req, res) => {
-  try {
-    const users = await fileRead(usersPath); // Reads the users from JSON
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Full Error:", error); // Debugging log
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
-);
+
 
 // Export the app as a serverless function
 export const handler = serverless(app);
