@@ -8,7 +8,7 @@ const app = express();
 // ✅ Manual CORS headers for Vercel
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "https://archlab.vercel.app");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") {
@@ -17,7 +17,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
 
 const usersPath = path.join(__dirname, "../database/users.json"); // Ensure path is correct
 
@@ -70,6 +69,17 @@ app.post("/api/users", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await fileRead(usersPath); // Reads the users from JSON
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Full Error:", error); // Debugging log
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+);
 
 // Export the app as a serverless function
 export const handler = serverless(app);
