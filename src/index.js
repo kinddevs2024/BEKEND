@@ -70,6 +70,9 @@ app.post("/users", async (req, res) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.status(200).send("Hello World");
+});
 
 
 // Export the app as a serverless function
