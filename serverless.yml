@@ -11,7 +11,7 @@ plugins:
 
 functions:
   app:
-    handler: src/index.handler  # adjust path to your file
+    handler: api/index.handler  # adjust path to your file
     events:
       - http:
           path: /{proxy+}
