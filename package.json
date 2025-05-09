@@ -16,6 +16,7 @@
   },
   "description": "",
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "serverless-offline": "^14.4.0"
   }
 }

@@ -1,79 +1,159 @@
-import express from "express";
-import serverless from "serverless-http";
-import { promises as fs } from "fs";
-import path from "path";
+const http = require("http");
+const fs = require("fs").promises;
 
-const app = express();
+const PORT = 3005;
 
-// ✅ Manual CORS headers for Vercel
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://archlab.vercel.app");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+const parser = async (req) => {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+};
+
+const fileRead = async (path) => {
+  const data = await fs.readFile(path, "utf-8");
+  return JSON.parse(data);
+};
+
+const server = http.createServer(async (req, res) => {
+  // CORS headers for all requests
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
 
-
-const usersPath = path.join(__dirname, "../database/users.json"); // Ensure path is correct
-
-// Utility function to validate request body
-function validateRequestBody(body) {
-  const { email, password } = body;
-  if (!email || !password) {
-    return "Email and password are required";
-  }
-  return null;
-}
-
-// Function to read the JSON file
-async function fileRead(path) {
-  try {
-    const data = await fs.readFile(path, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    throw new Error(`Error reading file at ${path}: ${error.message}`);
-  }
-}
-
-// POST /api/users - User authentication endpoint
-app.post("/users", async (req, res) => {
-  try {
-    const validationError = validateRequestBody(req.body);
-    if (validationError) {
-      res.status(400).json({ message: validationError });
+  if (req.url === "/api/login") {
+    if (req.method === "OPTIONS") {
+      res.writeHead(200);
+      res.end();
       return;
     }
 
-    const { email, password } = req.body;
-    const users = await fileRead(usersPath); // Reads the users from JSON
+    if (req.method === "POST") {
+      try {
+        const { email, password } = await parser(req);
 
-    const user = users.find(
-      (user) => user.email === email && user.password === password
-    );
+        if (!email || !password) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ message: "Email and password are required" })
+          );
+          return;
+        }
 
-    if (!user) {
-      res.status(401).json({ message: "Invalid email or password" });
-      return;
+        const users = await fileRead("./database/users.json");
+
+        const user = users.find(
+          (user) => user.email === email && user.password === password
+        );
+
+        if (!user) {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "Invalid email or password" }));
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ user }));
+      } catch (error) {
+        console.error("Error:", error);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Internal server error" }));
+      }
     }
+  } else if (req.url === "/api/users") {
+    if (req.method === "GET") {
+      try {
+        const users = await fileRead("./database/users.json");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(users));
+      } catch (error) {
+        console.error("Error:", error);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Internal server error" }));
+      }
+    }
+  } else if (req.url === "/api/add-user") {
+    if (req.method === "POST") {
+      try {
+        const {
+          status,
+          name,
+          surname,
+          phone,
+          address,
+          username,
+          email,
+          password,
+        } = await parser(req);
 
-    // Avoid exposing sensitive user data (don't send password)
-    const { password: _, ...safeUser } = user;
+        if (
+          !email ||
+          !password ||
+          !status ||
+          !name ||
+          !surname ||
+          !phone ||
+          !address ||
+          !username
+        ) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "All fields are required" }));
+          return;
+        }
 
-    res.status(200).json({ user: safeUser });
-  } catch (error) {
-    console.error("Full Error:", error); // Debugging log
-    res.status(500).json({ message: "Internal server error" });
+        const users = await fileRead("./database/users.json");
+
+        const userExists = users.some((user) => user.email === email);
+
+        if (userExists) {
+          res.writeHead(409, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "User already exists" }));
+          return;
+        }
+
+        const newUser = {
+          status,
+          name,
+          surname,
+          phone,
+          address,
+          username,
+          email,
+          password,
+        };
+        users.push(newUser);
+
+        await fs.writeFile(
+          "./database/users.json",
+          JSON.stringify(users, null, 2),
+          "utf-8"
+        );
+
+        res.writeHead(201, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ message: "User added successfully", user: newUser })
+        );
+      } catch (error) {
+        console.error("Error:", error);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Internal server error" }));
+      }
+    }
+  } else {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Not Found" }));
   }
 });
 
-app.get("/", (req, res) => {
-  res.status(200).send("Hello World");
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-
-
-// Export the app as a serverless function
-export const handler = serverless(app);
