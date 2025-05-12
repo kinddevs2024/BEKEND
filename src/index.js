@@ -1,5 +1,6 @@
 const http = require("http");
 const fs = require("fs").promises;
+const crypto = require("crypto");
 
 const PORT = 3005;
 
@@ -49,7 +50,18 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        const users = await fileRead("./database/users.json");
+        let users = [];
+        try {
+          users = await fileRead("./database/users.json");
+        } catch (error) {
+          if (error.code === "ENOENT") {
+            console.warn(
+              "Users file not found, initializing with an empty array."
+            );
+          } else {
+            throw error;
+          }
+        }
 
         const user = users.find(
           (user) => user.email === email && user.password === password
@@ -81,66 +93,63 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ message: "Internal server error" }));
       }
     }
-  } else if (req.url === "/api/add-user") {
+  } else if (req.url === "/api/add") {
     if (req.method === "POST") {
       try {
-        const {
-          status,
-          name,
-          surname,
-          phone,
-          address,
-          username,
-          email,
-          password,
-        } = await parser(req);
+        const { user } = await parser(req); // Extract the 'user' object
 
         if (
-          !email ||
-          !password ||
-          !status ||
-          !name ||
-          !surname ||
-          !phone ||
-          !address ||
-          !username
+          !user ||
+          !user.email ||
+          !user.password ||
+          !user.status ||
+          !user.name ||
+          !user.surname ||
+          !user.phone ||
+          !user.address ||
+          !user.username
         ) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ message: "All fields are required" }));
           return;
         }
 
-        const users = await fileRead("./database/users.json");
-
-        const userExists = users.some((user) => user.email === email);
-
-        if (userExists) {
-          res.writeHead(409, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ message: "User already exists" }));
-          return;
+        let users = [];
+        try {
+          users = await fileRead("./database/users.json");
+        } catch (error) {
+          if (error.code === "ENOENT") {
+            console.warn(
+              "Users file not found, initializing with an empty array."
+            );
+          } else {
+            throw error;
+          }
         }
 
-        const newUser = {
-          status,
-          name,
-          surname,
-          phone,
-          address,
-          username,
-          email,
-          password,
-        };
-        users.push(newUser);
+        const userIndex = users.findIndex(
+          (existingUser) => existingUser.email === user.email
+        );
+
+        if (userIndex !== -1) {
+          // Update the existing user
+          users[userIndex] = { ...users[userIndex], ...user }; // Merge existing user with new data
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ message: "User updated successfully", user: users[userIndex] })
+          );
+        } else {
+          // Add the new user with a unique ID
+          const newUser = { id: crypto.randomUUID(), ...user };
+          users.push(newUser);
+          res.writeHead(201, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "User added successfully", user: newUser }));
+        }
 
         await fs.writeFile(
           "./database/users.json",
           JSON.stringify(users, null, 2),
           "utf-8"
-        );
-
-        res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify({ message: "User added successfully", user: newUser })
         );
       } catch (error) {
         console.error("Error:", error);
@@ -148,6 +157,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ message: "Internal server error" }));
       }
     }
+  
   } else {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Not Found" }));
